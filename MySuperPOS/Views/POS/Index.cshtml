@@ -1,0 +1,181 @@
+@model IEnumerable<MySuperPOS.Models.Product>
+
+@{
+    ViewData["Title"] = "Sales Terminal";
+}
+
+<div class="container-fluid mt-3">
+    <div class="row">
+        <div class="col-md-7">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-grid-3x3-gap-fill me-2"></i>Product Catalog</h5>
+                    <div class="col-md-5">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+                            <input type="text" id="productSearch" class="form-control border-start-0" placeholder="Search item..." onkeyup="filterProducts()">
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body bg-light" style="height: 75vh; overflow-y: auto;">
+                    <div class="row g-3" id="productGrid">
+                        @foreach (var item in Model) {
+                            <div class="col-md-4 col-sm-6 product-item">
+                                <button class="btn btn-white shadow-sm w-100 h-100 p-3 pos-product-btn border-0 text-start bg-white" 
+                                        onclick="addToCart(@item.Id, '@item.Name', @item.Price)">
+                                    <div class="fw-bold text-dark text-truncate">@item.Name</div>
+                                    <div class="text-muted small mb-2">@item.Category</div>
+                                    <div class="d-flex justify-content-between align-items-center mt-auto">
+                                        <span class="fw-bold text-primary">R @item.Price.ToString("F2")</span>
+                                        <span class="badge @(item.StockQuantity < 10 ? "bg-warning text-dark" : "bg-light text-muted")">
+                                            Stock: @item.StockQuantity
+                                        </span>
+                                    </div>
+                                </button>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-5">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="bi bi-cart-fill me-2"></i>Current Sale</h5>
+                </div>
+                <div class="card-body p-0" style="height: 55vh; overflow-y: auto;">
+                    <table class="table table-hover align-middle" id="cartTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3">Item</th>
+                                <th>Qty</th>
+                                <th>Total</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            </tbody>
+                    </table>
+                </div>
+                <div class="card-footer bg-white border-top-0 p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="h5 text-muted mb-0">Total Amount:</span>
+                        <span id="grandTotal" class="h2 mb-0 fw-bold text-primary">R 0.00</span>
+                    </div>
+                    <button class="btn btn-success btn-lg w-100 py-3 fw-bold shadow" onclick="processSale()">
+                        <i class="bi bi-cash-stack me-2"></i> COMPLETE PAYMENT
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let cart = [];
+
+    // Add item to cart or increment quantity if already exists
+    function addToCart(id, name, price) {
+        const existing = cart.find(i => i.productId === id);
+        if (existing) {
+            existing.quantity++;
+        } else {
+            cart.push({ productId: id, name: name, unitPrice: price, quantity: 1 });
+        }
+        renderCart();
+    }
+
+    // Update the HTML table to show current cart items
+    function renderCart() {
+        const tbody = document.querySelector("#cartTable tbody");
+        tbody.innerHTML = "";
+        let total = 0;
+
+        cart.forEach((item, index) => {
+            const itemTotal = item.unitPrice * item.quantity;
+            total += itemTotal;
+            tbody.innerHTML += `
+                <tr>
+                    <td class="ps-3 fw-bold">${item.name}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-secondary py-0" onclick="updateQty(${index}, -1)">-</button>
+                        <span class="mx-2">${item.quantity}</span>
+                        <button class="btn btn-sm btn-outline-secondary py-0" onclick="updateQty(${index}, 1)">+</button>
+                    </td>
+                    <td>R ${itemTotal.toFixed(2)}</td>
+                    <td class="text-end pe-3">
+                        <button onclick="removeFromCart(${index})" class="btn btn-sm text-danger"><i class="bi bi-trash"></i></button>
+                    </td>
+                </tr>`;
+        });
+        document.getElementById("grandTotal").innerText = `R ${total.toFixed(2)}`;
+    }
+
+    function updateQty(index, change) {
+        cart[index].quantity += change;
+        if (cart[index].quantity <= 0) cart.splice(index, 1);
+        renderCart();
+    }
+
+    function removeFromCart(index) {
+        cart.splice(index, 1);
+        renderCart();
+    }
+
+    // Filter product grid based on search input
+    function filterProducts() {
+        const input = document.getElementById('productSearch').value.toLowerCase();
+        const items = document.querySelectorAll('.product-item');
+        items.forEach(item => {
+            const text = item.innerText.toLowerCase();
+            item.style.display = text.includes(input) ? '' : 'none';
+        });
+    }
+
+    // Send cart data to the Controller
+    async function processSale() {
+        if (cart.length === 0) {
+            alert("The cart is empty!");
+            return;
+        }
+
+        const saleData = {
+            totalAmount: cart.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0),
+            saleItems: cart.map(item => ({
+                productId: item.productId,
+                quantity: item.quantity,
+                unitPrice: item.unitPrice
+            }))
+        };
+
+        try {
+            const response = await fetch('/POS/CompleteSale', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(saleData)
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                // Redirect directly to the receipt view using the new Sale ID
+                window.location.href = '/POS/Receipt/' + result.saleId;
+            } else {
+                const errorMsg = await response.text();
+                alert("Error: " + errorMsg);
+            }
+        } catch (err) {
+            console.error(err);
+            alert("A server error occurred. Please try again.");
+        }
+    }
+</script>
+
+<style>
+    .pos-product-btn { transition: transform 0.1s; border: 1px solid #eee !important; }
+    .pos-product-btn:active { transform: scale(0.95); }
+    .pos-product-btn:hover { border-color: #0d6efd !important; }
+    .bg-soft-primary { background-color: rgba(13, 110, 253, 0.1); }
+</style>
+}

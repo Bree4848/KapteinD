@@ -1,0 +1,71 @@
+@model IEnumerable<MySuperPOS.Models.Sale>
+
+@{
+    ViewData["Title"] = "Daily Sales Report";
+    var totalRevenue = Model.Sum(s => s.TotalAmount);
+    var transactionCount = Model.Count();
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-graph-up-arrow"></i> Daily Sales Report</h1>
+        <button onclick="window.print()" class="btn btn-outline-secondary d-print-none">
+            <i class="bi bi-printer"></i> Print Report
+        </button>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card bg-primary text-white shadow">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-uppercase opacity-75">Total Revenue Today</h5>
+                    <h2 class="display-4 fw-bold">R @totalRevenue.ToString("F2")</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card bg-dark text-white shadow">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-uppercase opacity-75">Transactions</h5>
+                    <h2 class="display-4 fw-bold">@transactionCount</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Transaction History</h5>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Time</th>
+                        <th>Sale ID</th>
+                        <th>Items Sold</th>
+                        <th class="text-end">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var sale in Model)
+                    {
+                        <tr>
+                            <td>@sale.SaleDate.ToString("HH:mm")</td>
+                            <td>#@sale.Id</td>
+                            <td>
+                                <ul class="list-unstyled mb-0 small">
+                                    @foreach(var item in sale.SaleItems)
+                                    {
+                                        <li>@item.Quantity x @(item.Product?.Name ?? "Product")</li>
+                                    }
+                                </ul>
+                            </td>
+                            <td class="text-end fw-bold">R @sale.TotalAmount.ToString("F2")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

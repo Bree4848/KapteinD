@@ -1,0 +1,70 @@
+@model MySuperPOS.Models.Sale
+
+@{
+    Layout = null; // We don't want the navigation bar on a receipt
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <style>
+        body { font-family: 'Courier New', Courier, monospace; width: 80mm; margin: 0 auto; padding: 10px; }
+        .receipt-header { text-align: center; margin-bottom: 20px; }
+        .dashed-line { border-top: 1px dashed #000; margin: 10px 0; }
+        @@media print {
+            .no-print { display: none; }
+            body { width: 100%; margin: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt-header">
+        <h4 class="fw-bold">MySuperPOS</h4>
+        <p class="small">123 Street Road, Durban<br />Tel: 031 555 0123</p>
+    </div>
+
+    <div class="small">
+        <strong>Date:</strong> @Model.SaleDate.ToString("dd/MM/yyyy HH:mm")<br />
+        <strong>Sale ID:</strong> #@Model.Id
+    </div>
+
+    <div class="dashed-line"></div>
+
+    <table class="table table-borderless table-sm small">
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th class="text-center">Qty</th>
+                <th class="text-end">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.SaleItems)
+            {
+                <tr>
+                    <td>@item.Product?.Name</td>
+                    <td class="text-center">@item.Quantity</td>
+                    <td class="text-end">@((item.Quantity * item.UnitPrice).ToString("F2"))</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="dashed-line"></div>
+
+    <div class="d-flex justify-content-between fw-bold">
+        <span>TOTAL:</span>
+        <span>R @Model.TotalAmount.ToString("F2")</span>
+    </div>
+
+    <div class="receipt-header mt-4">
+        <p class="small">Thank you for shopping with us!</p>
+    </div>
+
+    <div class="text-center mt-3 no-print">
+        <button onclick="window.print()" class="btn btn-primary btn-sm">Print Receipt</button>
+        <a asp-action="Index" class="btn btn-secondary btn-sm">Back to POS</a>
+    </div>
+</body>
+</html>
