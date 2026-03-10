@@ -1,202 +1,158 @@
-﻿@{
-    ViewData["Title"] = "Manager Dashboard";
-    var lowStock = ViewBag.LowStock as List<MySuperPOS.Models.Product>;
+﻿@model IEnumerable<MySuperPOS.Models.Product>
+
+@{
+    ViewData["Title"] = "Inventory Management";
 }
 
 <div class="container-fluid mt-4">
-    <div class="row mb-4">
-        <div class="col-12 d-flex justify-content-between align-items-center">
-            <div>
-                <h1 class="h3 mb-0 text-gray-800"><i class="bi bi-speedometer2 me-2"></i>Management Dashboard</h1>
-                <p class="text-muted">Business performance overview for @DateTime.Now.ToString("dd MMMM yyyy")</p>
-            </div>
-            <a asp-controller="POS" asp-action="Index" class="btn btn-primary shadow-sm px-4">
-                <i class="bi bi-calculator me-2"></i> Open Sales Terminal
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-0"><i class="bi bi-box-seam me-2"></i>Product Inventory</h2>
+            <p class="text-muted small">Manage stock levels, prices, and generate barcodes.</p>
+        </div>
+        <div class="btn-group shadow-sm">
+            <a asp-action="Create" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i> Add New Product
+            </a>
+            <a asp-controller="Products" asp-action="PrintBarcodes" class="btn btn-dark">
+                <i class="bi bi-printer me-1"></i> Print All Labels
             </a>
         </div>
     </div>
 
-    <div class="row g-4 mb-4">
-        <div class="col-xl-4 col-md-6">
-            <div class="card border-0 border-start border-primary border-5 shadow-sm h-100">
-                <div class="card-body py-3">
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm border-0 mb-4" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm border-0 mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card border-0 shadow-sm bg-light">
+                <div class="card-body p-4">
                     <div class="row align-items-center">
-                        <div class="col">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Today's Revenue</div>
-                            <div class="h3 mb-0 font-weight-bold">R @ViewBag.DailyTotal.ToString("N2")</div>
+                        <div class="col-md-4">
+                            <h6 class="fw-bold mb-1">Bulk Inventory Update</h6>
+                            <p class="text-muted small mb-0">Upload a CSV file to add new items or update existing stock levels.</p>
                         </div>
-                        <div class="col-auto">
-                            <i class="bi bi-cash-coin fs-1 text-gray-300"></i>
+                        <div class="col-md-8">
+                            <<form asp-controller="Products" asp-action="UploadCSV" method="post" enctype="multipart/form-data" class="row g-2 justify-content-md-end">
+                                <div class="col-auto">
+                                    <input type="file" name="file" class="form-control form-control-sm shadow-none" accept=".csv" required />
+                                </div>
+                                <div class="col-auto">
+                                    <button type="submit" class="btn btn-sm btn-dark px-4">
+                                        <i class="bi bi-upload me-1"></i> Upload CSV
+                                    </button>
+                                </div>
+                            </form>
+                            <div class="text-md-end mt-1">
+                                <span class="badge bg-white text-muted border fw-normal" style="font-size: 0.7rem;">Required Headers: Name, Category, Price, StockQuantity</span>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-4 col-md-6">
-            <div class="card border-0 border-start border-success border-5 shadow-sm h-100">
-                <div class="card-body py-3">
-                    <div class="row align-items-center">
-                        <div class="col">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Transactions</div>
-                            <div class="h3 mb-0 font-weight-bold">@ViewBag.TransactionCount</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="bi bi-receipt-cutoff fs-1 text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-4 col-md-6">
-            <div class="card border-0 border-start border-warning border-5 shadow-sm h-100">
-                <div class="card-body py-3">
-                    <div class="row align-items-center">
-                        <div class="col">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Low Stock Alerts</div>
-                            <div class="h3 mb-0 font-weight-bold">@lowStock?.Count</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="bi bi-exclamation-diamond fs-1 text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row mb-4">
         <div class="col-12">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white py-3">
-                    <h5 class="m-0 font-weight-bold text-primary">
-                        <i class="bi bi-graph-up me-2"></i>Revenue Trend (Last 7 Days)
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div style="height: 300px; position: relative;">
-                        <canvas id="salesChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row mb-5">
-        <div class="col-12">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h5 class="m-0 font-weight-bold text-danger"><i class="bi bi-bell-fill me-2"></i>Critical Stock Items</h5>
-                    <a asp-controller="Products" asp-action="Index" class="btn btn-sm btn-outline-secondary">Inventory Manager</a>
-                </div>
-                <div class="card-body">
-                    @if (lowStock != null && lowStock.Any())
-                    {
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle">
-                                <thead class="table-light">
+            <div class="card border-0 shadow-sm">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-white">
+                            <tr class="text-muted small text-uppercase">
+                                <th class="ps-4">Product Details</th>
+                                <th>Category</th>
+                                <th>Price</th>
+                                <th>Current Stock</th>
+                                <th style="width: 220px;">Quick Restock</th>
+                                <th class="text-end pe-4">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model != null && Model.Any())
+                            {
+                                foreach (var item in Model)
+                                {
                                     <tr>
-                                        <th>Product</th>
-                                        <th>Category</th>
-                                        <th>Stock Level</th>
-                                        <th>Status</th>
-                                        <th class="text-end">Action</th>
+                                        <td class="ps-4">
+                                            <div class="fw-bold text-dark">@item.Name</div>
+                                            <div class="small text-muted text-truncate" style="max-width: 200px;">@item.Description</div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-soft-primary text-primary px-2 py-1">@item.Category</span>
+                                        </td>
+                                        <td class="fw-bold">R @item.Price.ToString("F2")</td>
+                                        <td>
+                                            @if (item.StockQuantity <= 5)
+                                            {
+                                                <span class="badge bg-danger"><i class="bi bi-exclamation-circle me-1"></i>@item.StockQuantity</span>
+                                            }
+                                            else if (item.StockQuantity <= 15)
+                                            {
+                                                <span class="badge bg-warning text-dark">@item.StockQuantity</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-success">@item.StockQuantity</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <form asp-action="Restock" method="post" class="d-flex gap-1">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@item.Id" />
+                                                <input type="number" name="addedQuantity" class="form-control form-control-sm shadow-none border-primary-subtle" placeholder="+ Qty" min="1" required />
+                                                <button type="submit" class="btn btn-sm btn-primary border-0" title="Add Stock">
+                                                    <i class="bi bi-plus-circle-fill"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                        <td class="text-end pe-4">
+                                            <div class="btn-group shadow-sm border rounded">
+                                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-white text-primary" title="Edit"><i class="bi bi-pencil"></i></a>
+                                                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-white text-info" title="View"><i class="bi bi-eye"></i></a>
+                                                <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-white text-danger" title="Delete"><i class="bi bi-trash"></i></a>
+                                            </div>
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var item in lowStock)
-                                    {
-                                        <tr>
-                                            <td class="fw-bold">@item.Name</td>
-                                            <td><span class="badge bg-light text-dark border">@item.Category</span></td>
-                                            <td class="fw-bold @(item.StockQuantity == 0 ? "text-danger" : "text-warning")">
-                                                @item.StockQuantity
-                                            </td>
-                                            <td>
-                                                @if (item.StockQuantity == 0)
-                                                {
-                                                    <span class="badge bg-danger">Out of Stock</span>
-                                                }
-                                                else
-                                                {
-                                                    <span class="badge bg-warning text-dark">Low Stock</span>
-                                                }
-                                            </td>
-                                            <td class="text-end">
-                                                <a asp-controller="Products" asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary shadow-sm">
-                                                    <i class="bi bi-box-arrow-in-down"></i> Restock
-                                                </a>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="text-center py-4">
-                            <i class="bi bi-check-circle-fill text-success fs-1"></i>
-                            <p class="mt-2 text-muted">All inventory levels are currently sufficient.</p>
-                        </div>
-                    }
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="6" class="text-center py-5 text-muted">
+                                        <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                                        No products found in the database.
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-@section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <script>
-        // Setup Chart.js
-        const ctx = document.getElementById('salesChart').getContext('2d');
-        
-        // Data passed from ViewBag
-        const labels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.ChartLabels));
-        const dataValues = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.ChartData));
-
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Daily Revenue (R)',
-                    data: dataValues,
-                    borderColor: '#0d6efd',
-                    backgroundColor: 'rgba(13, 110, 253, 0.05)',
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.3,
-                    pointBackgroundColor: '#0d6efd',
-                    pointRadius: 4,
-                    pointHoverRadius: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) { return 'R ' + value; }
-                        }
-                    }
-                }
-            }
-        });
-    </script>
-
-    <style>
-        .border-5 { border-width: 5px !important; }
-        .text-xs { font-size: .75rem; font-weight: 700; color: #858796; }
-        .card { transition: transform 0.2s; }
-        .card:hover { transform: translateY(-3px); }
-    </style>
-}
+<style>
+    .bg-soft-primary { background-color: rgba(13, 110, 253, 0.1); }
+    .btn-white { background-color: #fff; border: none; }
+    .btn-white:hover { background-color: #f8f9fa; }
+    .table thead th { border-top: none; border-bottom: 1px solid #eee; padding-top: 15px; padding-bottom: 15px; }
+    .form-control-sm:focus { border-color: #0d6efd; box-shadow: none; }
+    /* Removes the number arrows for a cleaner look */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+        -webkit-appearance: none; 
+        margin: 0; 
+    }
+</style>

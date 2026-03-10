@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MySuperPOS")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e2b97b174c85c7a22e1eb7112f7b2322c0f3a48b")]
 [assembly: System.Reflection.AssemblyProductAttribute("MySuperPOS")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MySuperPOS")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -1,0 +1,125 @@
+@model IEnumerable<MySuperPOS.Models.Product>
+
+@{
+    Layout = null; // This removes your standard site header/footer for a clean print
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Print Labels - MySuperPOS</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <style>
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        /* Dashboard Control Bar */
+        .no-print-header {
+            background: white;
+            padding: 20px;
+            border-bottom: 1px solid #dee2e6;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* Label Styling */
+        .barcode-sheet {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            padding: 20px;
+        }
+
+        .label-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            padding: 15px;
+            text-align: center;
+            border-radius: 4px;
+            transition: transform 0.2s;
+        }
+
+        .product-name {
+            font-weight: bold;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .barcode-img {
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 8px;
+        }
+
+        .price-tag {
+            font-size: 1rem;
+            font-weight: 800;
+            color: #000;
+        }
+
+        /* Printing Logic */
+        @@media print {
+            .no-print { display: none !important; }
+            body { background-color: white; }
+            .barcode-sheet {
+                display: block;
+                padding: 0;
+            }
+            .label-card {
+                width: 31%; /* Fits 3 labels across on A4 */
+                display: inline-block;
+                margin: 1%;
+                border: 1px solid #eee;
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="no-print no-print-header d-flex justify-content-between align-items-center">
+        <div>
+            <h4 class="mb-0 fw-bold">Print Product Labels</h4>
+            <small class="text-muted">Ready to print @Model.Count() items</small>
+        </div>
+        <div>
+            <a asp-action="Index" class="btn btn-outline-secondary me-2">
+                <i class="bi bi-arrow-left"></i> Back to Inventory
+            </a>
+            <button class="btn btn-primary px-4" onclick="window.print()">
+                <i class="bi bi-printer-fill me-2"></i> Print Labels Now
+            </button>
+        </div>
+    </div>
+
+    <div class="barcode-sheet">
+        @foreach (var item in Model)
+        {
+            <div class="label-card">
+                <div class="product-name">@item.Name</div>
+                
+                <img src="@Url.Action("Barcode", "Products", new { id = item.Id })" 
+                     alt="Barcode for @item.Name" 
+                     class="barcode-img" />
+                
+                <div class="price-tag">R @item.Price.ToString("F2")</div>
+            </div>
+        }
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="text-center py-5">
+            <i class="bi bi-box-seam text-muted" style="font-size: 3rem;"></i>
+            <p class="mt-3">No products found to generate labels.</p>
+        </div>
+    }
+
+</body>
+</html>

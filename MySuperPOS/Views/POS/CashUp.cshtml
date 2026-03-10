@@ -1,0 +1,106 @@
+@{
+    ViewData["Title"] = "Daily Cash Up";
+}
+
+<div class="container mt-4" style="max-width: 800px;">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-dark text-white py-3">
+            <h4 class="mb-0"><i class="bi bi-safe2 me-2"></i>End of Shift Cash Up</h4>
+        </div>
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="p-3 bg-light rounded border">
+                        <small class="text-muted text-uppercase fw-bold">System Expected</small>
+                        <h2 class="text-primary mb-0">R @ViewBag.Expected.ToString("N2")</h2>
+                        <small>From @ViewBag.Count Transactions</small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 bg-light rounded border">
+                        <small class="text-muted text-uppercase fw-bold">Variance (Difference)</small>
+                        <h2 id="varianceValue" class="text-success mb-0">R 0.00</h2>
+                        <small id="varianceStatus">Perfectly Balanced</small>
+                    </div>
+                </div>
+            </div>
+
+            <h5 class="mb-3 border-bottom pb-2">Physical Cash Count</h5>
+            <table class="table table-sm align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Denomination</th>
+                        <th style="width: 150px;">Quantity</th>
+                        <th class="text-end">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody id="cashTable">
+                    <tr data-value="200"><td>R 200 Note</td><td><input type="number" class="form-control form-control-sm count-input" min="0"></td><td class="text-end fw-bold">R 0.00</td></tr>
+                    <tr data-value="100"><td>R 100 Note</td><td><input type="number" class="form-control form-control-sm count-input" min="0"></td><td class="text-end fw-bold">R 0.00</td></tr>
+                    <tr data-value="50"><td>R 50 Note</td><td><input type="number" class="form-control form-control-sm count-input" min="0"></td><td class="text-end fw-bold">R 0.00</td></tr>
+                    <tr data-value="20"><td>R 20 Note</td><td><input type="number" class="form-control form-control-sm count-input" min="0"></td><td class="text-end fw-bold">R 0.00</td></tr>
+                    <tr data-value="10"><td>R 10 Note</td><td><input type="number" class="form-control form-control-sm count-input" min="0"></td><td class="text-end fw-bold">R 0.00</td></tr>
+                    <tr data-value="5"><td>R 5 Coin</td><td><input type="number" class="form-control form-control-sm count-input" min="0"></td><td class="text-end fw-bold">R 0.00</td></tr>
+                    <tr data-value="2"><td>R 2 Coin</td><td><input type="number" class="form-control form-control-sm count-input" min="0"></td><td class="text-end fw-bold">R 0.00</td></tr>
+                    <tr data-value="1"><td>R 1 Coin</td><td><input type="number" class="form-control form-control-sm count-input" min="0"></td><td class="text-end fw-bold">R 0.00</td></tr>
+                </tbody>
+                <tfoot>
+                    <tr class="table-dark">
+                        <td colspan="2" class="fw-bold">Total Physical Cash:</td>
+                        <td id="physicalTotal" class="text-end fw-bold">R 0.00</td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <div class="d-flex gap-2 mt-4">
+                <button class="btn btn-primary w-100 py-2 fw-bold" onclick="window.print()">
+                    <i class="bi bi-printer me-2"></i> PRINT REPORT
+                </button>
+                <a asp-action="Index" class="btn btn-outline-secondary w-100 py-2">CANCEL</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+@section Scripts {
+<script>
+    const expected = @ViewBag.Expected;
+    const inputs = document.querySelectorAll('.count-input');
+
+    inputs.forEach(input => {
+        input.addEventListener('input', () => {
+            let grandTotal = 0;
+            
+            document.querySelectorAll('#cashTable tr').forEach(row => {
+                const val = parseFloat(row.getAttribute('data-category') || row.getAttribute('data-value'));
+                const qty = parseFloat(row.querySelector('input').value) || 0;
+                const subtotal = val * qty;
+                
+                row.cells[2].innerText = `R ${subtotal.toFixed(2)}`;
+                grandTotal += subtotal;
+            });
+
+            document.getElementById('physicalTotal').innerText = `R ${grandTotal.toFixed(2)}`;
+            
+            const variance = grandTotal - expected;
+            const varDisplay = document.getElementById('varianceValue');
+            const varStatus = document.getElementById('varianceStatus');
+
+            varDisplay.innerText = `R ${variance.toFixed(2)}`;
+            
+            if (variance === 0) {
+                varDisplay.className = "text-success mb-0";
+                varStatus.innerText = "Perfectly Balanced";
+            } else if (variance < 0) {
+                varDisplay.className = "text-danger mb-0";
+                varStatus.innerText = "Short (Missing Cash)";
+            } else {
+                varDisplay.className = "text-warning mb-0";
+                varStatus.innerText = "Over (Extra Cash)";
+            }
+        });
+    });
+</script>
+}

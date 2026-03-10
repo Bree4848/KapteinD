@@ -17,81 +17,75 @@ namespace MySuperPOS.Controllers
         // --- SALES TERMINAL ---
 
         // GET: POS/Index
-        // The main checkout interface for the cashier
+        // Main checkout interface with product grid and category filters
         public async Task<IActionResult> Index()
         {
             var products = await _context.Products
                 .Where(p => p.StockQuantity > 0)
                 .OrderBy(p => p.Name)
                 .ToListAsync();
+
+            // Extract unique categories for the UI filter buttons
+            ViewBag.Categories = products
+                .Select(p => p.Category)
+                .Distinct()
+                .OrderBy(c => c)
+                .ToList();
+
             return View(products);
         }
 
-        // --- TRANSACTION PROCESSOR ---
+        // --- TRANSACTION ENGINE ---
 
         // POST: POS/CompleteSale
-        // Handles the logic for saving a sale and updating inventory levels
+        // Processes the cart, deducts inventory, and saves the transaction
         [HttpPost]
         public async Task<IActionResult> CompleteSale([FromBody] Sale sale)
         {
             if (sale == null || !sale.SaleItems.Any()) 
             {
-                return BadRequest("The transaction cannot be processed because the cart is empty.");
+                return BadRequest("Transaction failed: Cart is empty.");
             }
 
-            // Database Transaction ensures that either ALL records save or NONE do.
             using var transaction = await _context.Database.BeginTransactionAsync();
 
             try
             {
-                // 1. Finalize Sale Metadata
                 sale.SaleDate = DateTime.Now;
                 _context.Sales.Add(sale);
 
-                // 2. Loop through items to update inventory
                 foreach (var item in sale.SaleItems)
                 {
                     var product = await _context.Products.FindAsync(item.ProductId);
 
                     if (product == null)
-                    {
                         return BadRequest($"Product ID {item.ProductId} not found.");
-                    }
 
                     if (product.StockQuantity < item.Quantity)
-                    {
-                        return BadRequest($"Insufficient stock for {product.Name}. (Available: {product.StockQuantity})");
-                    }
+                        return BadRequest($"Insufficient stock for {product.Name}. Available: {product.StockQuantity}");
 
-                    // Deduct the quantity from the shop's stock
+                    // Atomically deduct stock
                     product.StockQuantity -= item.Quantity;
                     _context.Update(product);
                 }
 
-                // 3. Commit all changes
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                // Return the generated Sale ID so the frontend can redirect to the receipt
-                return Ok(new 
-                { 
-                    success = true, 
-                    saleId = sale.Id, 
-                    total = sale.TotalAmount 
-                });
+                // Return the Sale ID for receipt redirection
+                return Ok(new { success = true, saleId = sale.Id });
             }
             catch (Exception ex)
             {
-                // If anything fails (DB crash, etc), revert changes
                 await transaction.RollbackAsync();
-                return StatusCode(500, $"Critical Error: {ex.Message}");
+                return StatusCode(500, $"Internal Server Error: {ex.Message}");
             }
         }
 
         // --- PRINTING & VIEWING ---
 
         // GET: POS/Receipt/5
-        // Generates the thermal-style receipt for a specific transaction
+        // Generates a clean, printable thermal-style receipt
         public async Task<IActionResult> Receipt(int id)
         {
             var sale = await _context.Sales
@@ -99,18 +93,15 @@ namespace MySuperPOS.Controllers
                     .ThenInclude(si => si.Product)
                 .FirstOrDefaultAsync(s => s.Id == id);
 
-            if (sale == null) 
-            {
-                return NotFound();
-            }
+            if (sale == null) return NotFound();
 
             return View(sale);
         }
 
-        // --- MANAGEMENT REPORTS ---
+        // --- MANAGEMENT & ACCOUNTING ---
 
         // GET: POS/DailyReport
-        // Provides a summary of all business activities for today
+        // List of all sales made today for record-keeping
         public async Task<IActionResult> DailyReport()
         {
             var today = DateTime.Today;
@@ -123,6 +114,25 @@ namespace MySuperPOS.Controllers
                 .ToListAsync();
 
             return View(salesToday);
+        }
+
+        // GET: POS/CashUp
+        // Reconciliation tool to balance the cash drawer at the end of a shift
+        public async Task<IActionResult> CashUp()
+        {
+            var today = DateTime.Today;
+            
+            var expectedTotal = await _context.Sales
+                .Where(s => s.SaleDate >= today)
+                .SumAsync(s => (decimal?)s.TotalAmount) ?? 0;
+
+            var transactionCount = await _context.Sales
+                .CountAsync(s => s.SaleDate >= today);
+
+            ViewBag.Expected = expectedTotal;
+            ViewBag.Count = transactionCount;
+
+            return View();
         }
     }
 }

@@ -8,19 +8,34 @@
     <div class="row">
         <div class="col-md-7">
             <div class="card shadow-sm border-0">
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="bi bi-grid-3x3-gap-fill me-2"></i>Product Catalog</h5>
-                    <div class="col-md-5">
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
-                            <input type="text" id="productSearch" class="form-control border-start-0" placeholder="Search item..." onkeyup="filterProducts()">
+                <div class="card-header bg-primary text-white">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h5 class="mb-0"><i class="bi bi-grid-3x3-gap-fill me-2"></i>Catalog</h5>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                                <input type="text" id="productSearch" class="form-control border-start-0" placeholder="Search items..." onkeyup="filterProducts()">
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="card-body bg-light" style="height: 75vh; overflow-y: auto;">
+
+                <div class="card-body bg-light" style="height: 78vh; overflow-y: auto;">
+                    <div class="mb-3 d-flex gap-2 overflow-auto pb-2" id="categoryFilters">
+                        <button class="btn btn-sm btn-dark px-3 active-filter" onclick="filterByCategory('All', this)">All</button>
+                        @foreach (var cat in ViewBag.Categories)
+                        {
+                            <button class="btn btn-sm btn-outline-primary px-3 text-nowrap" onclick="filterByCategory('@cat', this)">
+                                @cat
+                            </button>
+                        }
+                    </div>
+
                     <div class="row g-3" id="productGrid">
                         @foreach (var item in Model) {
-                            <div class="col-md-4 col-sm-6 product-item">
+                            <div class="col-md-4 col-sm-6 product-item" data-category="@item.Category">
                                 <button class="btn btn-white shadow-sm w-100 h-100 p-3 pos-product-btn border-0 text-start bg-white" 
                                         onclick="addToCart(@item.Id, '@item.Name', @item.Price)">
                                     <div class="fw-bold text-dark text-truncate">@item.Name</div>
@@ -28,7 +43,7 @@
                                     <div class="d-flex justify-content-between align-items-center mt-auto">
                                         <span class="fw-bold text-primary">R @item.Price.ToString("F2")</span>
                                         <span class="badge @(item.StockQuantity < 10 ? "bg-warning text-dark" : "bg-light text-muted")">
-                                            Stock: @item.StockQuantity
+                                            Qty: @item.StockQuantity
                                         </span>
                                     </div>
                                 </button>
@@ -41,30 +56,59 @@
 
         <div class="col-md-5">
             <div class="card shadow-sm border-0 h-100">
-                <div class="card-header bg-dark text-white">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-3">
                     <h5 class="mb-0"><i class="bi bi-cart-fill me-2"></i>Current Sale</h5>
+                    <button class="btn btn-sm btn-outline-danger border-0 fw-bold" onclick="voidSale()">
+                        <i class="bi bi-trash3 me-1"></i> VOID
+                    </button>
                 </div>
-                <div class="card-body p-0" style="height: 55vh; overflow-y: auto;">
-                    <table class="table table-hover align-middle" id="cartTable">
+                
+                <div class="card-body p-0" style="height: 38vh; overflow-y: auto;">
+                    <table class="table table-hover align-middle mb-0" id="cartTable">
                         <thead class="table-light">
                             <tr>
-                                <th class="ps-3">Item</th>
+                                <th class="ps-3">Description</th>
                                 <th>Qty</th>
                                 <th>Total</th>
                                 <th></th>
                             </tr>
                         </thead>
-                        <tbody>
-                            </tbody>
+                        <tbody></tbody>
                     </table>
                 </div>
-                <div class="card-footer bg-white border-top-0 p-4">
+                
+                <div class="card-footer bg-white border-top p-3">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="h5 text-muted mb-0">Total Amount:</span>
+                        <span class="h5 text-muted mb-0">Total:</span>
                         <span id="grandTotal" class="h2 mb-0 fw-bold text-primary">R 0.00</span>
                     </div>
-                    <button class="btn btn-success btn-lg w-100 py-3 fw-bold shadow" onclick="processSale()">
-                        <i class="bi bi-cash-stack me-2"></i> COMPLETE PAYMENT
+
+                    <div class="mb-3">
+                        <label class="small text-muted fw-bold text-uppercase mb-1 d-block">Quick Cash</label>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-dark btn-sm flex-fill py-2 fw-bold" onclick="setCash(10)">R10</button>
+                            <button class="btn btn-outline-dark btn-sm flex-fill py-2 fw-bold" onclick="setCash(50)">R50</button>
+                            <button class="btn btn-outline-dark btn-sm flex-fill py-2 fw-bold" onclick="setCash(100)">R100</button>
+                            <button class="btn btn-outline-dark btn-sm flex-fill py-2 fw-bold" onclick="setCash(200)">R200</button>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3 align-items-center bg-light p-2 rounded mx-0 border">
+                        <div class="col-6 border-end">
+                            <label class="small text-muted">Received</label>
+                            <div class="input-group">
+                                <span class="input-group-text border-0 bg-transparent text-muted">R</span>
+                                <input type="number" id="cashReceived" class="form-control border-0 bg-transparent fw-bold h4 mb-0" placeholder="0.00" onkeyup="calculateChange()">
+                            </div>
+                        </div>
+                        <div class="col-6 text-end px-3">
+                            <div class="small text-muted">Change Due</div>
+                            <div id="changeDue" class="h3 fw-bold text-success mb-0">R 0.00</div>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-success btn-lg w-100 py-3 fw-bold shadow-sm" onclick="processSale()">
+                        <i class="bi bi-check2-circle me-2"></i> COMPLETE TRANSACTION
                     </button>
                 </div>
             </div>
@@ -72,11 +116,13 @@
     </div>
 </div>
 
+
+
 @section Scripts {
 <script>
     let cart = [];
 
-    // Add item to cart or increment quantity if already exists
+    // --- CART LOGIC ---
     function addToCart(id, name, price) {
         const existing = cart.find(i => i.productId === id);
         if (existing) {
@@ -87,7 +133,6 @@
         renderCart();
     }
 
-    // Update the HTML table to show current cart items
     function renderCart() {
         const tbody = document.querySelector("#cartTable tbody");
         tbody.innerHTML = "";
@@ -98,19 +143,22 @@
             total += itemTotal;
             tbody.innerHTML += `
                 <tr>
-                    <td class="ps-3 fw-bold">${item.name}</td>
+                    <td class="ps-3 fw-bold text-truncate" style="max-width:150px;">${item.name}</td>
                     <td>
-                        <button class="btn btn-sm btn-outline-secondary py-0" onclick="updateQty(${index}, -1)">-</button>
-                        <span class="mx-2">${item.quantity}</span>
-                        <button class="btn btn-sm btn-outline-secondary py-0" onclick="updateQty(${index}, 1)">+</button>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-secondary py-0 px-2" onclick="updateQty(${index}, -1)">-</button>
+                            <span class="btn btn-light disabled py-0 px-2" style="min-width:30px">${item.quantity}</span>
+                            <button class="btn btn-outline-secondary py-0 px-2" onclick="updateQty(${index}, 1)">+</button>
+                        </div>
                     </td>
-                    <td>R ${itemTotal.toFixed(2)}</td>
+                    <td class="fw-bold">R ${itemTotal.toFixed(2)}</td>
                     <td class="text-end pe-3">
-                        <button onclick="removeFromCart(${index})" class="btn btn-sm text-danger"><i class="bi bi-trash"></i></button>
+                        <button onclick="removeFromCart(${index})" class="btn btn-sm text-danger opacity-50"><i class="bi bi-x-square-fill"></i></button>
                     </td>
                 </tr>`;
         });
         document.getElementById("grandTotal").innerText = `R ${total.toFixed(2)}`;
+        calculateChange();
     }
 
     function updateQty(index, change) {
@@ -124,7 +172,31 @@
         renderCart();
     }
 
-    // Filter product grid based on search input
+    function voidSale() {
+        if (cart.length > 0 && confirm("Are you sure you want to clear this entire transaction?")) {
+            cart = [];
+            document.getElementById('cashReceived').value = '';
+            renderCart();
+        }
+    }
+
+    // --- FILTERING LOGIC ---
+    function filterByCategory(category, btn) {
+        // Toggle active button style
+        document.querySelectorAll('#categoryFilters .btn').forEach(b => {
+            b.classList.replace('btn-primary', 'btn-outline-primary');
+            b.classList.remove('btn-dark', 'active-filter');
+        });
+        btn.classList.add('active-filter');
+        btn.classList.contains('btn-outline-primary') ? btn.classList.replace('btn-outline-primary', 'btn-primary') : btn.classList.add('btn-dark');
+
+        const items = document.querySelectorAll('.product-item');
+        items.forEach(item => {
+            const itemCat = item.getAttribute('data-category');
+            item.style.display = (category === 'All' || itemCat === category) ? '' : 'none';
+        });
+    }
+
     function filterProducts() {
         const input = document.getElementById('productSearch').value.toLowerCase();
         const items = document.querySelectorAll('.product-item');
@@ -134,10 +206,30 @@
         });
     }
 
-    // Send cart data to the Controller
+    // --- CASH & PAYMENT ---
+    function setCash(amount) {
+        document.getElementById('cashReceived').value = amount;
+        calculateChange();
+    }
+
+    function calculateChange() {
+        const total = cart.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
+        const received = parseFloat(document.getElementById('cashReceived').value) || 0;
+        const change = received - total;
+
+        const changeDisplay = document.getElementById('changeDue');
+        changeDisplay.innerText = `R ${Math.max(0, change).toFixed(2)}`;
+        
+        if (received > 0 && change < 0) {
+            changeDisplay.classList.replace('text-success', 'text-danger');
+        } else {
+            changeDisplay.classList.replace('text-danger', 'text-success');
+        }
+    }
+
     async function processSale() {
         if (cart.length === 0) {
-            alert("The cart is empty!");
+            alert("Cart is empty.");
             return;
         }
 
@@ -159,23 +251,23 @@
 
             if (response.ok) {
                 const result = await response.json();
-                // Redirect directly to the receipt view using the new Sale ID
                 window.location.href = '/POS/Receipt/' + result.saleId;
             } else {
-                const errorMsg = await response.text();
-                alert("Error: " + errorMsg);
+                const error = await response.text();
+                alert("Transaction Failed: " + error);
             }
         } catch (err) {
-            console.error(err);
-            alert("A server error occurred. Please try again.");
+            alert("A network error occurred. Check connection.");
         }
     }
 </script>
 
 <style>
-    .pos-product-btn { transition: transform 0.1s; border: 1px solid #eee !important; }
-    .pos-product-btn:active { transform: scale(0.95); }
-    .pos-product-btn:hover { border-color: #0d6efd !important; }
-    .bg-soft-primary { background-color: rgba(13, 110, 253, 0.1); }
+    .pos-product-btn { transition: all 0.15s ease; border: 1px solid #dee2e6 !important; height: 100%; border-radius: 12px; }
+    .pos-product-btn:hover { border-color: #0d6efd !important; box-shadow: 0 4px 12px rgba(13,110,253,0.1) !important; transform: translateY(-2px); }
+    .pos-product-btn:active { transform: scale(0.97); background-color: #f8f9fa; }
+    .active-filter { box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+    #cartTable thead th { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    #cashReceived:focus { outline: none; box-shadow: none; }
 </style>
 }
