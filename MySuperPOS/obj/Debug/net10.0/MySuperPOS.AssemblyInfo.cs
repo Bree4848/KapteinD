@@ -10,10 +10,11 @@
 using System;
 using System.Reflection;
 
+[assembly: Microsoft.AspNetCore.Identity.UI.UIFrameworkAttribute("Bootstrap5")]
 [assembly: System.Reflection.AssemblyCompanyAttribute("MySuperPOS")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e2b97b174c85c7a22e1eb7112f7b2322c0f3a48b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d66bb8e9c9239c3d7d527d815a50143b4c5c1771")]
 [assembly: System.Reflection.AssemblyProductAttribute("MySuperPOS")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MySuperPOS")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
